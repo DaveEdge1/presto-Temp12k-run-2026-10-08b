@@ -35,14 +35,14 @@ jobs:
   #   filtered  — runs the lipdGenerator container to query lipdverse
   # Either way produces lipd_legacy.pkl, uploaded as an artifact for Job 2.
   prepare-data:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 200
     permissions:
       contents: write   # for committing CITATION.cff updates
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Detect data acquisition pathway
         id: pathway
@@ -78,9 +78,10 @@ jobs:
       # already selected by the Temperature 12k criteria and deduplicated.
       - name: Fetch PReSto pool bundle
         if: steps.pathway.outputs.mode == 'bundle'
-        uses: paleopresto/presto-recipes/.github/actions/fetch-pool@pools
+        uses: paleopresto/presto-recipes/.github/actions/fetch-pool@fe42e8583e1337c81bfde95774fc206041a44474 # pools, as used 2026-10-14
         with:
           format: pickle
+          image: davidedge/lipd_webapps:lipdGenerator@sha256:7e26347912ba36028f6e2e54827c6ee38794510ffd0d363ff41d5a9e040caa99
 
       # PATH B: filtered query via lipdGenerator container.
       - name: Generate LiPD data from query
@@ -91,7 +92,7 @@ jobs:
           docker run --rm \
             -v $(pwd)/query_params.json:/query_params.json:ro \
             -v $(pwd)/lipd_output:/output \
-            davidedge/lipd_webapps:lipdGenerator /query_params.json /output pickle
+            davidedge/lipd_webapps:lipdGenerator@sha256:7e26347912ba36028f6e2e54827c6ee38794510ffd0d363ff41d5a9e040caa99 /query_params.json /output pickle
 
           if [ ! -f lipd_output/lipd_legacy.pkl ]; then
             echo "ERROR: lipdGenerator did not produce lipd_legacy.pkl"
@@ -121,7 +122,7 @@ jobs:
             -v "$(pwd)/lipd_legacy.pkl:/data/lipd_legacy.pkl:ro" \
             -v "$(pwd)/citations_out:/citations_out" \
             $EXTRA_MOUNT \
-            davidedge/lipd_webapps:lipdGenerator \
+            davidedge/lipd_webapps:lipdGenerator@sha256:7e26347912ba36028f6e2e54827c6ee38794510ffd0d363ff41d5a9e040caa99 \
             citations /data/lipd_legacy.pkl /citations_out \
             --title="Reconstruction $RECON_ID" \
             --url="https://github.com/${{ github.repository }}" \
@@ -154,7 +155,7 @@ jobs:
           fi
 
       - name: Upload proxy data artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: reconstruction-proxy-data-${{ github.run_id }}
           path: lipd_legacy.pkl
@@ -166,7 +167,7 @@ jobs:
   # per-method global-ensemble CSV. Wall-clock ≈ the slowest single method.
   reconstruct:
     needs: prepare-data
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 360  # hosted-runner maximum; CPS on large pools runs 3-4 h
     strategy:
       fail-fast: false
@@ -175,10 +176,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Download proxy data artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: reconstruction-proxy-data-${{ github.run_id }}
 
@@ -207,7 +208,7 @@ jobs:
           ls -lh ./results/methods/
 
       - name: Upload per-method ensembles (global + per-band)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: recon-method-${{ matrix.method }}-${{ github.run_id }}
           path: ./results/methods/${{ matrix.method }}_*.csv
@@ -216,20 +217,20 @@ jobs:
   # ── Job 3: Pool the per-method ensembles into the consensus + outputs ──
   combine:
     needs: reconstruct
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Build container
         run: docker build -t presto-temp12k:local .
 
       - name: Download all per-method ensembles
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: recon-method-*-${{ github.run_id }}
           merge-multiple: true
@@ -255,7 +256,7 @@ jobs:
           ls -lhR ./results/
 
       - name: Upload reconstruction artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: reconstruction-${{ github.run_id }}
           path: ./results/

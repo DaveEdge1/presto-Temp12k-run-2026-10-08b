@@ -26,7 +26,7 @@ on:
 
 jobs:
   find-latest-run:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     outputs:
       run_number:    ${{ steps.get_run.outputs.run_number }}
@@ -58,7 +58,7 @@ jobs:
 
   inspect-output:
     needs: find-latest-run
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       actions: read
       contents: read
@@ -66,10 +66,10 @@ jobs:
       is_spatial: ${{ steps.detect.outputs.is_spatial }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Download reconstruction artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: ${{ needs.find-latest-run.outputs.artifact_name }}
           path: ./recon-data
@@ -84,7 +84,7 @@ jobs:
         # source artifact directly; re-upload under a stable name so
         # the visualize jobs below grab the same files without
         # passing tokens around.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: recon-data-for-viz-${{ github.run_number }}
           path: ./recon-data/
@@ -114,7 +114,7 @@ jobs:
   visualize-spatial:
     needs: [find-latest-run, inspect-output]
     if: needs.inspect-output.outputs.is_spatial == 'true'
-    uses: DaveEdge1/presto-viz/.github/workflows/presto-viz-reusable.yml@add-temp12k
+    uses: DaveEdge1/presto-viz/.github/workflows/presto-viz-reusable.yml@6705db5aec67782093cda364e390dff1b04b441d # add-temp12k, as used 2026-10-15
     with:
       reconstruction_id: Reconstruction_Run_${{ needs.find-latest-run.outputs.run_number }}_Reviz_${{ github.run_number }}
       artifact_name:     recon-data-for-viz-${{ github.run_number }}
@@ -123,13 +123,13 @@ jobs:
   visualize-static:
     needs: [find-latest-run, inspect-output]
     if: needs.inspect-output.outputs.is_spatial == 'false'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Download recon data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: recon-data-for-viz-${{ github.run_number }}
           path: ./viz
@@ -234,7 +234,7 @@ jobs:
           ls -lhR ./static-viz/
 
       - name: Upload static-viz artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: static-viz-${{ github.run_number }}
           path: ./static-viz/
@@ -244,7 +244,7 @@ jobs:
   deploy-to-github-pages:
     needs: [find-latest-run, inspect-output, visualize-spatial, visualize-static]
     if: always() && (needs.visualize-spatial.result == 'success' || needs.visualize-static.result == 'success')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pages: write
@@ -254,7 +254,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # Spatial: presto-viz uploads its own artifact under
       # `presto-viz-output-<reconstruction_id>`. Try that first; if it
@@ -262,14 +262,14 @@ jobs:
       # static-viz artifact.
       - name: Download visualization artifact (spatial)
         if: needs.inspect-output.outputs.is_spatial == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: presto-viz-output-Reconstruction_Run_${{ needs.find-latest-run.outputs.run_number }}_Reviz_${{ github.run_number }}
           path: ./visualization-output
 
       - name: Download visualization artifact (static)
         if: needs.inspect-output.outputs.is_spatial == 'false'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: static-viz-${{ github.run_number }}
           path: ./visualization-output
@@ -280,7 +280,7 @@ jobs:
         # container's combine stage (validate.py). Best-effort — older or
         # validation-less runs simply won't have it.
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: recon-data-for-viz-${{ github.run_number }}
           path: ./recon-data
@@ -397,18 +397,18 @@ jobs:
           ls -lhR ./visualization-output/ | head -80
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
         with:
           enablement: true
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: ./visualization-output
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
       # Homepage URL is set by the PReSto webhook handler using the user's
       # OAuth token (GITHUB_TOKEN lacks admin permission to update repo settings).

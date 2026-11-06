@@ -27,7 +27,7 @@ on:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 240   # nens=500 x2-determinism: PaiCo runs ~175 min and can cross 180
                            # on a slow runner (run 28976558958 timed out at 180); 240 = headroom
     strategy:
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Fetch real-ensemble bundle from release
         env:
@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload per-method ensemble
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: realens-${{ matrix.method }}-${{ github.run_id }}
           path: results1/methods/${{ matrix.method }}_*.csv
@@ -114,14 +114,14 @@ jobs:
   # reconstruction ("in the same manner").
   combine:
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Download all real-ensemble per-method ensembles
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: realens-*-${{ github.run_id }}
           merge-multiple: true
@@ -152,7 +152,7 @@ jobs:
           ls -lh results/reconstruction.csv results/validation/ results/figures/ 2>/dev/null || true
 
       - name: Upload real-ensemble diagnostics (for visualize.yml -> Pages)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: realens-diagnostics-${{ github.run_id }}
           path: |

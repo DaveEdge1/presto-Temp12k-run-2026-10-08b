@@ -8,7 +8,8 @@
 # Layers ordered least->most frequently changed so script edits rebuild fast.
 
 # ── Layer 1: base (R + lipdR/geoChronR/compositeR via renv at /) ──────────
-FROM davidedge/lipd_webapps:lipdbase2
+# Pinned by digest: the image the 2026-10-14 run used (lipdbase2 is a mutable tag).
+FROM davidedge/lipd_webapps:lipdbase2@sha256:cc1a152177aec9b2c6b233c73c1b1163e9fd62fc14b9c484b6a946443df88aa5
 
 ENV DEBIAN_FRONTEND=noninteractive TZ=UTC
 
@@ -21,10 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-venv python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
+# Exact versions from the 2026-10-14 run (requirements.lock).
+COPY requirements.lock /tmp/requirements.lock
 RUN python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    /opt/venv/bin/pip install --no-cache-dir \
-        numpy pandas scipy pyyaml xarray netcdf4 "matplotlib>=3.6" pygam && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip==26.2.1 setuptools==84.0.0 wheel==0.48.0 && \
+    /opt/venv/bin/pip install --no-cache-dir --no-deps -r /tmp/requirements.lock && \
+    /opt/venv/bin/pip check && \
     /opt/venv/bin/python -c "import numpy, pandas, scipy, yaml, xarray, netCDF4, matplotlib, pygam; print('venv deps OK')"
 
 ENV PYTHON_BIN=/opt/venv/bin/python
