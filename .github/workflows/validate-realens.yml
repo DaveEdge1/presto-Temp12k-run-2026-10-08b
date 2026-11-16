@@ -68,7 +68,7 @@ jobs:
 
       - name: Score vs published + determinism
         run: |
-          python3 -m pip install --quiet numpy
+          python3 -m pip install --quiet numpy==2.2.6
           M=${{ matrix.method }}
           CSV="results1/methods/${M}_global.csv"
           if [ ! -f "$CSV" ]; then

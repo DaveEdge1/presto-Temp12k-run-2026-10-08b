@@ -18,8 +18,30 @@ ENV DEBIAN_FRONTEND=noninteractive TZ=UTC
 # python3-venv + python3-pip via apt first, then build an isolated venv.
 # numpy/pandas/scipy/xarray/netcdf4/matplotlib + pygam (GAM) + pyyaml.
 # netcdf4 manylinux wheels bundle libnetcdf, so no apt system lib needed.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3-venv python3-pip \
+#
+# Pinned: Ubuntu's archive keeps only the newest build of each package (and
+# this step upgrades the python3.10 interpreter itself), so read the archive as
+# it was when the 2026-10-14 run built (snapshot.ubuntu.com) and pin every
+# package that run installed.
+RUN sed -i -E 's#http://(archive|security)\.ubuntu\.com/ubuntu/?#http://snapshot.ubuntu.com/ubuntu/20261014T220000Z/#' \
+        /etc/apt/sources.list \
+    && apt-get -o Acquire::Check-Valid-Until=false update \
+    && apt-get install -y --no-install-recommends \
+        python3-venv=3.10.6-1~22.04.1 \
+        python3-pip=22.0.2+dfsg-1ubuntu0.7 \
+        python3=3.10.6-1~22.04.1 \
+        python3-minimal=3.10.6-1~22.04.1 \
+        libpython3-stdlib=3.10.6-1~22.04.1 \
+        python3.10=3.10.12-1~22.04.18 \
+        python3.10-minimal=3.10.12-1~22.04.18 \
+        python3.10-venv=3.10.12-1~22.04.18 \
+        libpython3.10-stdlib=3.10.12-1~22.04.18 \
+        libpython3.10-minimal=3.10.12-1~22.04.18 \
+        python3-pkg-resources=59.6.0-1.2ubuntu0.22.04.3 \
+        python3-setuptools=59.6.0-1.2ubuntu0.22.04.3 \
+        python3-setuptools-whl=59.6.0-1.2ubuntu0.22.04.3 \
+        python3-wheel=0.37.1-2ubuntu0.22.04.1 \
+        python3-pip-whl=22.0.2+dfsg-1ubuntu0.7 \
     && rm -rf /var/lib/apt/lists/*
 
 # Exact versions from the 2026-10-14 run (requirements.lock).
