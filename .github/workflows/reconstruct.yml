@@ -80,8 +80,28 @@ jobs:
         if: steps.pathway.outputs.mode == 'bundle'
         uses: paleopresto/presto-recipes/.github/actions/fetch-pool@fe42e8583e1337c81bfde95774fc206041a44474 # pools, as used 2026-10-14
         with:
-          format: pickle
+          # Download + sha256 check + unzip only; the pickle is built below.
+          format: lpdzip
           image: davidedge/lipd_webapps:lipdGenerator@sha256:7e26347912ba36028f6e2e54827c6ee38794510ffd0d363ff41d5a9e040caa99
+
+      # lipd.readLipd(dir) reads files in os.listdir order, which differs from
+      # one runner to the next, and the methods' seeded draws follow record
+      # order. Read the .lpd files in the order the 2026-10-14 run did (from its
+      # prepare-data log) so the pickle matches that run's.
+      - name: Build lipd_legacy.pkl in the 2026-10-14 read order
+        if: steps.pathway.outputs.mode == 'bundle'
+        run: |
+          set -euo pipefail
+          rm -f lipd_output/lipd_files.zip
+          docker run --rm --entrypoint conda \
+            -v "$(pwd)/lipd_output:/output" \
+            -v "$(pwd)/.github/pool-order:/order:ro" \
+            davidedge/lipd_webapps:lipdGenerator@sha256:7e26347912ba36028f6e2e54827c6ee38794510ffd0d363ff41d5a9e040caa99 \
+            run --no-capture-output -n lipd_gen python /order/build_pool_pickle.py \
+              /output /order/read-order-2026-10-14.txt /output/lipd_legacy.pkl
+          mv lipd_output/lipd_legacy.pkl lipd_legacy.pkl
+          ls -lh lipd_legacy.pkl
+          sha256sum lipd_legacy.pkl
 
       # PATH B: filtered query via lipdGenerator container.
       - name: Generate LiPD data from query
